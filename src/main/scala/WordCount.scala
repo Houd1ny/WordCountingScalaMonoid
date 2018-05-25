@@ -71,10 +71,8 @@ object Main {
     res
   }
 
-  def isAlphaNum(c: Char) =
-    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '1')
 
-  case class WordCountTuple(leftWord: Boolean, count: Int, rightWord: Boolean)
+  case class State(endCharLeft: Boolean, count: Int, endCharRight: Boolean)
 
   def main(args: Array[String]): Unit = {
 
@@ -85,29 +83,29 @@ object Main {
     implicit val threshold = 1000
 
 
-    val monoid = new Monoid[WordCountTuple] {
-      def op(x: WordCountTuple, y: WordCountTuple) = {
+    val monoid = new Monoid[State] {
+      def op(x: State, y: State) = {
         (x, y) match {
-          case (WordCountTuple(_, -1, _), WordCountTuple(yl, yc, yr)) => y
-          case (WordCountTuple(xl, xc, xr), WordCountTuple(_, -1, _)) => x
-          case (WordCountTuple(xl, xc, false), WordCountTuple(false, yc, yr)) => WordCountTuple(xl, xc + yc, yr)
-          case (WordCountTuple(xl, xc, false), WordCountTuple(true, yc, yr)) => WordCountTuple(xl, xc + yc, yr)
-          case (WordCountTuple(xl, xc, true), WordCountTuple(false, yc, yr)) => WordCountTuple(xl, xc + yc + 1, yr)
-          case (WordCountTuple(xl, xc, true), WordCountTuple(true, yc, yr)) => WordCountTuple(xl, xc + yc, yr)
+          case (State(_, -1, _), State(yl, yc, yr)) => y
+          case (State(xl, xc, xr), State(_, -1, _)) => x
+          case (State(xl, xc, false), State(false, yc, yr)) => State(xl, xc + yc, yr)
+          case (State(xl, xc, false), State(true, yc, yr)) => State(xl, xc + yc, yr)
+          case (State(xl, xc, true), State(false, yc, yr)) => State(xl, xc + yc + 1, yr)
+          case (State(xl, xc, true), State(true, yc, yr)) => State(xl, xc + yc, yr)
         }
       }
 
-      def zero = WordCountTuple(false, -1, false)
+      def zero = State(false, -1, false)
     }
 
-    def convertCharIntoWordCountTuple(letter: Char) = {
-      if (isAlphaNum(letter) )
-        WordCountTuple(true, 0, true)
+    def convertCharIntoState(letter: Char) = {
+      if (letter.isLetterOrDigit)
+        State(true, 0, true)
       else
-        WordCountTuple(false, 0, false)
+        State(false, 0, false)
     }
 
-    val res = foldMapPar(text, 0, text.length, monoid)(convertCharIntoWordCountTuple)
+    val res = foldMapPar(text, 0, text.length, monoid)(convertCharIntoState)
 
     println(res)
   }
